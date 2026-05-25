@@ -102,8 +102,7 @@ const ArchiveSceneFrame = ({
       extrapolateRight: 'clamp',
     }),
   );
-  const transform = imageTransform(scene, progress, frame);
-  const gateJitter = Math.sin((frame + scene.index * 11) * 0.55) * 0.9;
+  const transform = imageTransform(scene, progress);
   const focusBlur = scene.index === 1
     ? interpolate(frame, [0, 14, 42], [8, 2.5, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'})
     : 0;
@@ -111,10 +110,7 @@ const ArchiveSceneFrame = ({
   return (
     <AbsoluteFill style={{...styles.scene, opacity: fade}}>
       <AbsoluteFill
-        style={{
-          ...styles.imageWrap,
-          transform: `translate(${gateJitter}px, ${-gateJitter * 0.55}px)`,
-        }}
+        style={styles.imageWrap}
       >
         <Img
           src={staticFile(scene.image)}
@@ -135,31 +131,22 @@ const ArchiveSceneFrame = ({
   );
 };
 
-const imageTransform = (scene: ArchiveScene, progress: number, frame: number) => {
-  const pulse = Math.sin(frame * 0.03 + scene.index) * 0.002;
-  const zoom = scene.motion === 'pull' ? 1.115 - progress * 0.048 : 1.068 + progress * 0.048;
-  const pan = 34 * (progress - 0.5);
-  const drift = Math.sin(progress * Math.PI * 2 + scene.index) * 8;
+const imageTransform = (scene: ArchiveScene, progress: number) => {
+  const isZoomIn = scene.index % 2 === 1;
+  const startScale = isZoomIn ? 1.035 : 1.15;
+  const endScale = isZoomIn ? 1.15 : 1.035;
+  const zoom = interpolate(progress, [0, 1], [startScale, endScale], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+  });
 
-  if (scene.motion === 'pan_left') {
-    return `scale(${zoom + pulse}) translateX(${pan}px) translateY(${drift}px)`;
-  }
-  if (scene.motion === 'pan_right') {
-    return `scale(${zoom + pulse}) translateX(${-pan}px) translateY(${drift}px)`;
-  }
-  if (scene.motion === 'scanner') {
-    return `scale(${1.07 + pulse}) translateX(${Math.sin(frame * 0.012) * 15}px) translateY(${progress * -18}px)`;
-  }
-  if (scene.motion === 'drift') {
-    return `scale(${1.06 + pulse}) translateX(${Math.sin(frame * 0.018) * 18}px) translateY(${Math.cos(frame * 0.014) * 13}px)`;
-  }
-  return `scale(${zoom + pulse}) translateY(${scene.motion === 'slow_push' ? -progress * 20 : drift}px)`;
+  return `scale(${zoom})`;
 };
 
 const imageFilter = (scene: ArchiveScene, frame: number) => {
-  const flicker = Math.sin(frame * 0.39 + scene.index) * 0.035;
-  const contrast = scene.mode === 'dossier' ? 1.18 : 1.08;
-  return `sepia(0.28) saturate(0.78) contrast(${contrast}) brightness(${0.84 + flicker})`;
+  const flicker = Math.sin(frame * 0.39 + scene.index) * 0.018;
+  const contrast = scene.mode === 'dossier' ? 1.1 : 1.03;
+  return `sepia(0.18) saturate(0.9) contrast(${contrast}) brightness(${1 + flicker})`;
 };
 
 const FilmDamage = ({frame, scene}: {frame: number; scene: ArchiveScene}) => {
@@ -340,12 +327,12 @@ const styles: Record<string, CSSProperties> = {
   },
   softGrade: {
     background:
-      'linear-gradient(90deg, rgba(23,13,5,0.45), rgba(7,7,8,0.08) 45%, rgba(8,7,6,0.58)), linear-gradient(180deg, rgba(248,212,140,0.08), rgba(0,0,0,0.18))',
+      'linear-gradient(90deg, rgba(23,13,5,0.18), rgba(7,7,8,0.03) 45%, rgba(8,7,6,0.22)), linear-gradient(180deg, rgba(248,212,140,0.07), rgba(0,0,0,0.07))',
     mixBlendMode: 'multiply',
   },
   vignette: {
     background:
-      'radial-gradient(circle at 50% 48%, rgba(0,0,0,0) 0%, rgba(0,0,0,0.18) 48%, rgba(0,0,0,0.72) 100%)',
+      'radial-gradient(circle at 50% 48%, rgba(0,0,0,0) 0%, rgba(0,0,0,0.08) 54%, rgba(0,0,0,0.36) 100%)',
   },
   damage: {
     pointerEvents: 'none',
