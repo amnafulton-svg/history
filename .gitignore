@@ -1,0 +1,12 @@
+node_modules/
+out/
+incoming/
+chunks/
+rendered/
+*.log
+.DS_Store
+public/audio/
+public/images/
+public/sfx/
+public/manifest.json
+public/*.zip
