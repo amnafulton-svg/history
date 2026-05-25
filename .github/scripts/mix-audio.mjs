@@ -113,7 +113,7 @@ events.forEach((event, index) => {
   mixLabels.push(`[${label}]`);
 });
 filters.push(
-  `${mixLabels.join("")}amix=inputs=${mixLabels.length}:duration=longest:dropout_transition=0,atrim=0:${duration}[aout]`,
+  `${mixLabels.join("")}amix=inputs=${mixLabels.length}:duration=longest:dropout_transition=0:normalize=0,alimiter=limit=0.98,atrim=0:${duration}[aout]`,
 );
 
 args.push(
