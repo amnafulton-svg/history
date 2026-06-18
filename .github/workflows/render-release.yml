@@ -87,6 +87,7 @@ jobs:
           else
             safe_concurrency="2"
           fi
+
           npx remotion render src/index.ts ArchiveDocumentary "out/${{ matrix.stem }}_chunk_${{ matrix.chunk_id }}.mp4" \
             --codec=h264 \
             --muted \
@@ -139,12 +140,17 @@ jobs:
       - name: Stitch chunks and add audio
         run: |
           rm -f chunk-list.txt
+
           for file in $(find chunks -name "${{ matrix.stem }}_chunk_*.mp4" | sort); do
             echo "file '$(realpath "$file")'" >> chunk-list.txt
           done
+
           test -s chunk-list.txt
+
           ffmpeg -y -f concat -safe 0 -i chunk-list.txt -c copy "out/${{ matrix.stem }}_silent.mp4"
+
           node .github/scripts/mix-audio.mjs "out/${{ matrix.stem }}_audio.m4a"
+
           if [ -f "out/${{ matrix.stem }}_audio.m4a" ]; then
             ffmpeg -y -i "out/${{ matrix.stem }}_silent.mp4" -i "out/${{ matrix.stem }}_audio.m4a" \
               -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -shortest "out/${{ matrix.stem }}.mp4"
@@ -152,34 +158,9 @@ jobs:
             cp "out/${{ matrix.stem }}_silent.mp4" "out/${{ matrix.stem }}.mp4"
           fi
 
-      - name: Upload rendered video
+      - name: Upload final video artifact
         uses: actions/upload-artifact@v4
         with:
-          name: video-${{ matrix.stem }}
+          name: ${{ matrix.stem }}.mp4
           path: out/${{ matrix.stem }}.mp4
-          if-no-files-found: error
-
-  collect:
-    name: Collect videos
-    needs: combine-videos
-    runs-on: ubuntu-latest
-    if: ${{ success() }}
-    steps:
-      - name: Download rendered videos
-        uses: actions/download-artifact@v4
-        with:
-          pattern: video-*
-          merge-multiple: true
-          path: rendered
-
-      - name: Create final zip
-        run: |
-          cd rendered
-          zip -9 ../rendered-archive-videos.zip ./*.mp4
-
-      - name: Upload final zip
-        uses: actions/upload-artifact@v4
-        with:
-          name: rendered-archive-videos
-          path: rendered-archive-videos.zip
           if-no-files-found: error
