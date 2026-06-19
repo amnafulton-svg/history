@@ -19,7 +19,7 @@ on:
         default: 10
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   discover:
@@ -158,9 +158,14 @@ jobs:
             cp "out/${{ matrix.stem }}_silent.mp4" "out/${{ matrix.stem }}.mp4"
           fi
 
-      - name: Upload final video artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.stem }}.mp4
-          path: out/${{ matrix.stem }}.mp4
-          if-no-files-found: error
+      - name: Upload final MP4 to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          ls -lh out
+          test -f "out/${{ matrix.stem }}.mp4"
+
+          gh release upload "$RELEASE_TAG" "out/${{ matrix.stem }}.mp4" \
+            --repo "$GITHUB_REPOSITORY" \
+            --clobber
